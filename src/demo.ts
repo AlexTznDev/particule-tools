@@ -357,6 +357,8 @@ class Demo {
         const initialFormationTime = 2000;
         await new Promise(r => setTimeout(r, initialFormationTime));
 
+        await new Promise(r => setTimeout(r, 200));
+
         for (let i = 1; i < this.shapes.length; i++) {
             this.mesh!.setActiveIndex(i);
             this.panel.setActiveIndex(i);
