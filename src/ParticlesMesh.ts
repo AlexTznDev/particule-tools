@@ -45,9 +45,9 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
         baseParticleScale: 1,
         wigglePower: 0.6,
         wiggleSpeed: 1,
-        burstStrength: 0.08,
-        explosionDuration: 0.995,
-        reconstructionSpeed: 0.06,
+        burstStrength: 0.14,
+        explosionDuration: 0.985,
+        reconstructionSpeed: 0.05,
     };
 
     uniforms = {
@@ -58,6 +58,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
         scale: uniform(this.params.baseParticleScale),
         wigglePower: uniform(this.params.wigglePower),
         wiggleSpeed: uniform(this.params.wiggleSpeed),
+        speedMul: uniform(0.15),
     };
 
     constructor(
@@ -125,7 +126,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
                 .assign(
                     vec3(
                         hash(instanceIndex).sub(0.5).mul(2),
-                        hash(instanceIndex.add(1).mul(10)).mul(3).sub(8),
+                        hash(instanceIndex.add(1).mul(10)).mul(3).add(5),
                         hash(instanceIndex.add(2)).sub(0.5),
                     ),
                 );
@@ -170,6 +171,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
             velocity.assign(safeDir.add(wiggle).normalize().mul(overshootLen));
 
             velocity.mulAssign(settled);
+            velocity.mulAssign(this.uniforms.speedMul);
 
             position.addAssign(velocity);
         })().compute(this.amount);
@@ -186,6 +188,11 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
     }
 
     update() {
+        const speed = this.uniforms.speedMul.value;
+        if (speed < 1) {
+            this.uniforms.speedMul.value = Math.min(1, speed + 0.003);
+        }
+
         const force = this.uniforms.burstForce.value;
         if (force > 0.001) {
             const ratio = force / this.params.burstStrength;

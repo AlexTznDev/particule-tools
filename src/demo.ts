@@ -91,8 +91,25 @@ class Demo {
         this.panel.setAutoLoop(this.autoLoop, this.autoLoopDelay);
         this.panel.setActivePalette(this.activePaletteName);
         await this.#rebuildMesh();
+        await this.#hideLoader();
         this.renderer.setAnimationLoop(this.render);
         this.#startAutoLoop();
+    }
+
+    #hideLoader(): Promise<void> {
+        return new Promise((resolve) => {
+            const loader = document.getElementById('loader');
+            if (!loader) { resolve(); return; }
+            const elapsed = performance.now();
+            const remaining = Math.max(0, 2000 - elapsed);
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                setTimeout(() => {
+                    loader.remove();
+                    resolve();
+                }, 500);
+            }, remaining);
+        });
     }
 
     async #loadInitialShapes() {
