@@ -325,7 +325,7 @@ class Demo {
         const savedAutoLoop = this.autoLoop;
         this.#stopAutoLoop();
 
-        this.mesh.setActiveIndex(0);
+        await this.mesh.resetParticles();
         this.panel.setActiveIndex(0);
 
         const stream = this.canvas.captureStream(60);
@@ -354,18 +354,16 @@ class Demo {
 
         recorder.start();
 
-        const settleTime = 1500;
-        const totalShapes = this.shapes.length;
+        const initialFormationTime = 2000;
+        await new Promise(r => setTimeout(r, initialFormationTime));
 
-        await new Promise(r => setTimeout(r, settleTime));
-
-        for (let i = 1; i < totalShapes; i++) {
+        for (let i = 1; i < this.shapes.length; i++) {
             this.mesh!.setActiveIndex(i);
             this.panel.setActiveIndex(i);
             await new Promise(r => setTimeout(r, this.autoLoopDelay));
         }
 
-        await new Promise(r => setTimeout(r, settleTime));
+        await new Promise(r => setTimeout(r, 1500));
 
         recorder.stop();
         await downloadPromise;

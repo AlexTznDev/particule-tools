@@ -58,7 +58,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
         scale: uniform(this.params.baseParticleScale),
         wigglePower: uniform(this.params.wigglePower),
         wiggleSpeed: uniform(this.params.wiggleSpeed),
-        speedMul: uniform(0.15),
+        speedMul: uniform(0.4),
     };
 
     constructor(
@@ -120,21 +120,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
             return vec4(color, alpha);
         })();
 
-        const initCompute = Fn(() => {
-            this.buffers.positions
-                ?.element(instanceIndex)
-                .assign(
-                    vec3(
-                        hash(instanceIndex).sub(0.5).mul(2),
-                        hash(instanceIndex.add(1).mul(10)).mul(3).add(5),
-                        hash(instanceIndex.add(2)).sub(0.5),
-                    ),
-                );
-
-            this.buffers.velocities?.element(instanceIndex).assign(vec3(0));
-        })().compute(this.amount);
-
-        this.renderer.computeAsync(initCompute);
+        this.renderer.computeAsync(this.#createInitCompute());
 
         this.updateCompute = Fn(() => {
             const position = this.buffers.positions!.element(instanceIndex);
@@ -177,6 +163,33 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
         })().compute(this.amount);
     }
 
+    #createInitCompute() {
+        return Fn(() => {
+            this.buffers.positions
+                ?.element(instanceIndex)
+                .assign(
+                    vec3(
+                        hash(instanceIndex).sub(0.5).mul(2),
+                        hash(instanceIndex.add(1).mul(10)).mul(3).add(5),
+                        hash(instanceIndex.add(2)).sub(0.5),
+                    ),
+                );
+            this.buffers.velocities?.element(instanceIndex).assign(vec3(0));
+        })().compute(this.amount);
+    }
+
+    async resetParticles() {
+        this.uniforms.activeIndex.value = 0;
+        this.uniforms.burstForce.value = 0;
+        this.uniforms.speedMul.value = 0.4;
+        const pair = this.colors[0];
+        if (pair) {
+            this.uniforms.color1.value.copy(pair[0]);
+            this.uniforms.color2.value.copy(pair[1]);
+        }
+        await this.renderer.computeAsync(this.#createInitCompute());
+    }
+
     setActiveIndex(index: number) {
         this.uniforms.activeIndex.value = index;
         this.uniforms.burstForce.value = this.params.burstStrength;
@@ -190,7 +203,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
     update() {
         const speed = this.uniforms.speedMul.value;
         if (speed < 1) {
-            this.uniforms.speedMul.value = Math.min(1, speed + 0.003);
+            this.uniforms.speedMul.value = Math.min(1, speed + 0.008);
         }
 
         const force = this.uniforms.burstForce.value;
