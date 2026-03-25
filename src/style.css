@@ -135,7 +135,8 @@ canvas {
     width: 36px;
     height: 36px;
     border-radius: 5px;
-    background: #fff;
+    background:
+        repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 0 0 / 12px 12px;
     flex-shrink: 0;
     object-fit: contain;
     padding: 3px;

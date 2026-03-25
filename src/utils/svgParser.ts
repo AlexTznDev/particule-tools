@@ -95,7 +95,21 @@ export async function parseSingleSvg(
     ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     const img = await svgToImage(svgString);
-    ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    const aspect = img.naturalWidth / img.naturalHeight;
+    let dw: number, dh: number, dx: number, dy: number;
+    if (aspect >= 1) {
+        dw = CANVAS_SIZE;
+        dh = CANVAS_SIZE / aspect;
+        dx = 0;
+        dy = (CANVAS_SIZE - dh) / 2;
+    } else {
+        dh = CANVAS_SIZE;
+        dw = CANVAS_SIZE * aspect;
+        dx = (CANVAS_SIZE - dw) / 2;
+        dy = 0;
+    }
+    ctx.drawImage(img, dx, dy, dw, dh);
 
     return samplePoints(ctx, CANVAS_SIZE, particleCount, worldSize);
 }
