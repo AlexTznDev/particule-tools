@@ -399,6 +399,33 @@ canvas {
     cursor: pointer;
 }
 
+/* ─── Export ─── */
+
+.export-btn {
+    margin-top: 14px;
+    width: 100%;
+}
+
+.export-indicator {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #1e1e1e;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: #ff4444;
+    text-align: center;
+    animation: pulse-rec 1.2s ease-in-out infinite;
+}
+
+.export-indicator.hidden {
+    display: none;
+}
+
+@keyframes pulse-rec {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 /* ─── Tweakpane container ─── */
 
 .tweakpane-container {

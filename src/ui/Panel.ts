@@ -16,6 +16,7 @@ export interface PanelCallbacks {
     onMorphNext: () => void;
     onPaletteApply: (paletteName: string, colors: [string, string][]) => void;
     onBackgroundChange: (color: string) => void;
+    onExportVideo: () => void;
 }
 
 export const PALETTE_PRESETS: Record<string, [string, string][]> = {
@@ -114,6 +115,8 @@ export class Panel {
     private dragCounter = 0;
     private autoLoop = true;
     private reorderDragIndex = -1;
+    private exportBtn!: HTMLButtonElement;
+    private exportIndicator!: HTMLElement;
 
     private boundDragEnter: (e: DragEvent) => void;
     private boundDragLeave: (e: DragEvent) => void;
@@ -413,7 +416,24 @@ export class Panel {
         bgRow.append(bgLabel, bgInput);
         section.appendChild(bgRow);
 
+        this.exportIndicator = document.createElement('div');
+        this.exportIndicator.className = 'export-indicator hidden';
+        this.exportIndicator.textContent = 'Enregistrement en cours...';
+        section.appendChild(this.exportIndicator);
+
+        this.exportBtn = document.createElement('button');
+        this.exportBtn.className = 'btn btn-secondary export-btn';
+        this.exportBtn.textContent = 'Exporter en video';
+        this.exportBtn.addEventListener('click', () => this.callbacks.onExportVideo());
+        section.appendChild(this.exportBtn);
+
         return section;
+    }
+
+    setExporting(active: boolean) {
+        this.exportBtn.disabled = active;
+        this.exportBtn.textContent = active ? 'Export en cours...' : 'Exporter en video';
+        this.exportIndicator.classList.toggle('hidden', !active);
     }
 
     #buildDragOverlay(): HTMLElement {

@@ -74,6 +74,7 @@ class Demo {
             onMorphNext: () => this.#doMorph(),
             onPaletteApply: (name, colors) => this.#handlePaletteApply(name, colors),
             onBackgroundChange: (color) => this.bgColor.value.set(color),
+            onExportVideo: () => this.#exportVideo(),
         });
 
         this.onWindowResize();
@@ -313,6 +314,65 @@ class Demo {
         if (this.autoLoop) {
             this.#startAutoLoop();
         }
+    }
+
+    /* ─── Video export ─── */
+
+    async #exportVideo() {
+        if (!this.mesh || this.shapes.length === 0) return;
+
+        this.panel.setExporting(true);
+        const savedAutoLoop = this.autoLoop;
+        this.#stopAutoLoop();
+
+        this.mesh.setActiveIndex(0);
+        this.panel.setActiveIndex(0);
+
+        const stream = this.canvas.captureStream(60);
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9'
+            : 'video/webm';
+        const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+        const chunks: Blob[] = [];
+
+        recorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        const downloadPromise = new Promise<void>((resolve) => {
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'particle-morphing.webm';
+                a.click();
+                URL.revokeObjectURL(url);
+                resolve();
+            };
+        });
+
+        recorder.start();
+
+        const settleTime = 1500;
+        const totalShapes = this.shapes.length;
+
+        await new Promise(r => setTimeout(r, settleTime));
+
+        for (let i = 1; i < totalShapes; i++) {
+            this.mesh!.setActiveIndex(i);
+            this.panel.setActiveIndex(i);
+            await new Promise(r => setTimeout(r, this.autoLoopDelay));
+        }
+
+        await new Promise(r => setTimeout(r, settleTime));
+
+        recorder.stop();
+        await downloadPromise;
+
+        this.autoLoop = savedAutoLoop;
+        if (savedAutoLoop) this.#startAutoLoop();
+        this.panel.setExporting(false);
     }
 
     /* ─── Events ─── */
