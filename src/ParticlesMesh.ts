@@ -42,7 +42,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
     updateCompute: ComputeNode;
 
     params = {
-        baseParticleScale: 1,
+        baseParticleScale: 0.7,
         wigglePower: 0.6,
         wiggleSpeed: 1,
         burstStrength: 0.14,

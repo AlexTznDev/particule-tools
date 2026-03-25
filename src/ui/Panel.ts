@@ -9,6 +9,7 @@ export interface ShapeEntry {
 export interface PanelCallbacks {
     onFilesDropped: (files: { name: string; content: string }[]) => void;
     onShapeRemoved: (index: number) => void;
+    onShapeReordered: (fromIndex: number, toIndex: number) => void;
     onShapeColorChanged: (index: number, color1: string, color2: string) => void;
     onAutoLoopToggle: (active: boolean) => void;
     onDelayChange: (delay: number) => void;
@@ -18,6 +19,16 @@ export interface PanelCallbacks {
 }
 
 export const PALETTE_PRESETS: Record<string, [string, string][]> = {
+    'Anagram': [
+        ['#000000', '#444444'],
+        ['#222222', '#555555'],
+        ['#444444', '#777777'],
+        ['#666666', '#999999'],
+        ['#888888', '#bbbbbb'],
+        ['#aaaaaa', '#d5d5d5'],
+        ['#000000', '#777777'],
+        ['#444444', '#d5d5d5'],
+    ],
     'Coucher de soleil': [
         ['#F3C38F', '#F1A554'],
         ['#F1A554', '#C07026'],
@@ -102,6 +113,7 @@ export class Panel {
     private callbacks: PanelCallbacks;
     private dragCounter = 0;
     private autoLoop = true;
+    private reorderDragIndex = -1;
 
     private boundDragEnter: (e: DragEvent) => void;
     private boundDragLeave: (e: DragEvent) => void;
@@ -427,11 +439,61 @@ export class Panel {
     #createShapeCard(shape: ShapeEntry, index: number): HTMLElement {
         const card = document.createElement('div');
         card.className = 'shape-card';
+        card.draggable = true;
+        card.dataset.index = String(index);
+
+        card.addEventListener('dragstart', (e) => {
+            this.reorderDragIndex = index;
+            card.classList.add('dragging');
+            e.dataTransfer!.effectAllowed = 'move';
+            e.dataTransfer!.setData('text/plain', String(index));
+        });
+
+        card.addEventListener('dragend', () => {
+            this.reorderDragIndex = -1;
+            card.classList.remove('dragging');
+            this.shapeListEl.querySelectorAll('.shape-card').forEach(c => {
+                c.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+        });
+
+        card.addEventListener('dragover', (e) => {
+            if (this.reorderDragIndex < 0) return;
+            e.preventDefault();
+            e.dataTransfer!.dropEffect = 'move';
+            const rect = card.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            const isAbove = e.clientY < mid;
+            card.classList.toggle('drag-over-top', isAbove);
+            card.classList.toggle('drag-over-bottom', !isAbove);
+        });
+
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+
+        card.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            card.classList.remove('drag-over-top', 'drag-over-bottom');
+            if (this.reorderDragIndex < 0) return;
+            const fromIndex = this.reorderDragIndex;
+            const rect = card.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            let toIndex = index;
+            if (e.clientY >= mid && toIndex < fromIndex) toIndex++;
+            if (e.clientY < mid && toIndex > fromIndex) toIndex--;
+            if (fromIndex !== toIndex) {
+                this.callbacks.onShapeReordered(fromIndex, toIndex);
+            }
+            this.reorderDragIndex = -1;
+        });
 
         const thumb = document.createElement('img');
         thumb.className = 'shape-thumb';
         thumb.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(shape.svgString);
         thumb.alt = shape.name;
+        thumb.draggable = false;
 
         const info = document.createElement('div');
         info.className = 'shape-info';
@@ -490,6 +552,7 @@ export class Panel {
 
     #onWindowDragEnter(e: DragEvent) {
         e.preventDefault();
+        if (this.reorderDragIndex >= 0) return;
         this.dragCounter++;
         if (this.dragCounter === 1) {
             this.dragOverlay.classList.remove('hidden');

@@ -17,7 +17,7 @@ import { loadSvgShapes, parseSingleSvg } from './utils/svgParser';
 import { Panel, PALETTE_PRESETS, type ShapeEntry } from './ui/Panel';
 
 const PARTICLE_COUNT = 12000;
-const DEFAULT_PALETTE = 'Coucher de soleil';
+const DEFAULT_PALETTE = 'Anagram';
 
 class Demo {
     canvas: HTMLCanvasElement;
@@ -67,6 +67,7 @@ class Demo {
         this.panel = new Panel({
             onFilesDropped: (files) => this.#handleFilesDropped(files),
             onShapeRemoved: (index) => this.#handleShapeRemoved(index),
+            onShapeReordered: (from, to) => this.#handleShapeReordered(from, to),
             onShapeColorChanged: (index, c1, c2) => this.#handleColorChanged(index, c1, c2),
             onAutoLoopToggle: (active) => this.#handleAutoLoopToggle(active),
             onDelayChange: (delay) => this.#handleDelayChange(delay),
@@ -191,6 +192,14 @@ class Demo {
 
     async #handleShapeRemoved(index: number) {
         this.shapes.splice(index, 1);
+        this.panel.setShapes(this.shapes);
+        await this.#rebuildMesh();
+        this.#restartAutoLoop();
+    }
+
+    async #handleShapeReordered(fromIndex: number, toIndex: number) {
+        const [shape] = this.shapes.splice(fromIndex, 1);
+        this.shapes.splice(toIndex, 0, shape);
         this.panel.setShapes(this.shapes);
         await this.#rebuildMesh();
         this.#restartAutoLoop();

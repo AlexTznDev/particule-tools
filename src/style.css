@@ -120,6 +120,11 @@ canvas {
     border-radius: 8px;
     border-left: 3px solid transparent;
     transition: background 0.15s, border-color 0.2s;
+    cursor: grab;
+}
+
+.shape-card:active {
+    cursor: grabbing;
 }
 
 .shape-card:hover {
@@ -129,6 +134,18 @@ canvas {
 .shape-card.active {
     border-left-color: #fff;
     background: #222;
+}
+
+.shape-card.dragging {
+    opacity: 0.3;
+}
+
+.shape-card.drag-over-top {
+    box-shadow: 0 -2px 0 0 #fff;
+}
+
+.shape-card.drag-over-bottom {
+    box-shadow: 0 2px 0 0 #fff;
 }
 
 .shape-thumb {
