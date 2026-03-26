@@ -15,7 +15,7 @@ export interface PanelCallbacks {
     onDelayChange: (delay: number) => void;
     onMorphNext: () => void;
     onPaletteApply: (paletteName: string, colors: [string, string][]) => void;
-    onBackgroundChange: (color: string) => void;
+    onBackgroundChange: (color1: string, color2: string) => void;
     onExportVideo: () => void;
 }
 
@@ -405,15 +405,23 @@ export class Panel {
         bgLabel.className = 'control-label';
         bgLabel.textContent = 'Fond';
 
-        const bgInput = document.createElement('input');
-        bgInput.type = 'color';
-        bgInput.className = 'shape-color-input';
-        bgInput.value = '#ffffff';
-        bgInput.addEventListener('input', () => {
-            this.callbacks.onBackgroundChange(bgInput.value);
-        });
+        const bgInput1 = document.createElement('input');
+        bgInput1.type = 'color';
+        bgInput1.className = 'shape-color-input';
+        bgInput1.value = '#ffffff';
 
-        bgRow.append(bgLabel, bgInput);
+        const bgInput2 = document.createElement('input');
+        bgInput2.type = 'color';
+        bgInput2.className = 'shape-color-input';
+        bgInput2.value = '#ffffff';
+
+        const onBgChange = () => {
+            this.callbacks.onBackgroundChange(bgInput1.value, bgInput2.value);
+        };
+        bgInput1.addEventListener('input', onBgChange);
+        bgInput2.addEventListener('input', onBgChange);
+
+        bgRow.append(bgLabel, bgInput1, bgInput2);
         section.appendChild(bgRow);
 
         this.exportIndicator = document.createElement('div');

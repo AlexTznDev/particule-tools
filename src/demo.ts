@@ -1,5 +1,5 @@
 import Stats from 'stats-gl';
-import { Fn, uniform, vec3, vec4 } from 'three/tsl';
+import { Fn, mix, screenUV, uniform, vec4 } from 'three/tsl';
 import {
     ACESFilmicToneMapping,
     Clock,
@@ -38,7 +38,9 @@ class Demo {
 
     shapes: ShapeEntry[] = [];
     activePaletteName = DEFAULT_PALETTE;
-    bgColor = uniform(new Color('#ffffff'));
+
+    bgColor1 = uniform(new Color('#ffffff'));
+    bgColor2 = uniform(new Color('#ffffff'));
 
     constructor(canvas: HTMLCanvasElement) {
         this.render = this.render.bind(this);
@@ -52,7 +54,10 @@ class Demo {
         this.renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
         this.scene = new Scene();
-        this.scene.backgroundNode = Fn(() => vec4(this.bgColor, 1))();
+        this.scene.backgroundNode = Fn(() => {
+            const gradient = mix(this.bgColor1, this.bgColor2, screenUV.y);
+            return vec4(gradient, 1);
+        })();
 
         this.camera = new PerspectiveCamera(60, canvas.width / canvas.height, 0.1, 500);
         this.camera.position.set(0, 0, 6);
@@ -73,7 +78,10 @@ class Demo {
             onDelayChange: (delay) => this.#handleDelayChange(delay),
             onMorphNext: () => this.#doMorph(),
             onPaletteApply: (name, colors) => this.#handlePaletteApply(name, colors),
-            onBackgroundChange: (color) => this.bgColor.value.set(color),
+            onBackgroundChange: (c1, c2) => {
+                this.bgColor1.value.set(c1);
+                this.bgColor2.value.set(c2);
+            },
             onExportVideo: () => this.#exportVideo(),
         });
 
@@ -82,6 +90,8 @@ class Demo {
         this.#initEvents();
         this.#init();
     }
+
+    // background gradient handled by bgColor1/bgColor2 uniforms
 
     get dpr() {
         return Math.min(window.devicePixelRatio, 1.5);
