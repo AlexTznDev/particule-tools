@@ -423,7 +423,7 @@ class Demo {
 
         this.stats?.update();
         this.pointerHandler.update(delta);
-        this.mesh?.update();
+        this.mesh?.update(delta);
 
         if (this.is3D && this.mesh) {
             this.mesh.rotation.y += 0.4 * delta;

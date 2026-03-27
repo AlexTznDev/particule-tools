@@ -59,6 +59,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
         wigglePower: uniform(this.params.wigglePower),
         wiggleSpeed: uniform(this.params.wiggleSpeed),
         speedMul: uniform(0.4),
+        deltaTime: uniform(1 / 60),
     };
 
     constructor(
@@ -159,7 +160,7 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
             velocity.mulAssign(settled);
             velocity.mulAssign(this.uniforms.speedMul);
 
-            position.addAssign(velocity);
+            position.addAssign(velocity.mul(this.uniforms.deltaTime.mul(60)));
         })().compute(this.amount);
     }
 
@@ -200,17 +201,20 @@ class ParticlesMesh extends InstancedMesh<PlaneGeometry, SpriteNodeMaterial> {
         }
     }
 
-    update() {
+    update(delta: number) {
+        const t = delta * 60;
+        this.uniforms.deltaTime.value = delta;
+
         const speed = this.uniforms.speedMul.value;
         if (speed < 1) {
-            this.uniforms.speedMul.value = Math.min(1, speed + 0.008);
+            this.uniforms.speedMul.value = Math.min(1, speed + 0.008 * t);
         }
 
         const force = this.uniforms.burstForce.value;
         if (force > 0.001) {
             const ratio = force / this.params.burstStrength;
             const decay = this.params.explosionDuration - (1 - ratio) * this.params.reconstructionSpeed;
-            this.uniforms.burstForce.value *= decay;
+            this.uniforms.burstForce.value *= Math.pow(decay, t);
         } else {
             this.uniforms.burstForce.value = 0;
         }
