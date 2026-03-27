@@ -1,3 +1,68 @@
+const TRANSLATIONS = {
+    fr: {
+        shapes: 'Formes',
+        emptyMsg: 'Aucune forme chargée. Glissez un SVG ci-dessous.',
+        dropText: 'Glisser un SVG ici',
+        dropHint: 'ou cliquer pour parcourir',
+        palette: 'Palette',
+        paletteCustom: 'Personnalisé',
+        animation: 'Animation',
+        pause: 'Pause',
+        play: 'Lecture',
+        next: 'Suivant',
+        delay: 'Délai',
+        background: 'Fond',
+        recording: 'Enregistrement en cours...',
+        exportVideo: 'Exporter en vidéo',
+        exporting: 'Export en cours...',
+        dragOverlay: 'Déposer les fichiers SVG ici',
+        deleteShape: 'Supprimer cette forme',
+        color1: 'Couleur 1',
+        color2: 'Couleur 2',
+        particlesSection: 'Particules',
+        explosionSection: 'Explosion',
+        movement: 'Mouvement',
+        noiseSpeed: 'Vitesse bruit',
+        size: 'Taille',
+        force: 'Force',
+        duration: 'Durée',
+        reconstruction: 'Reconstruction',
+        mode: 'Mode',
+    },
+    en: {
+        shapes: 'Shapes',
+        emptyMsg: 'No shapes loaded. Drop an SVG below.',
+        dropText: 'Drop an SVG here',
+        dropHint: 'or click to browse',
+        palette: 'Palette',
+        paletteCustom: 'Custom',
+        animation: 'Animation',
+        pause: 'Pause',
+        play: 'Play',
+        next: 'Next',
+        delay: 'Delay',
+        background: 'Background',
+        recording: 'Recording...',
+        exportVideo: 'Export video',
+        exporting: 'Exporting...',
+        dragOverlay: 'Drop SVG files here',
+        deleteShape: 'Delete shape',
+        color1: 'Color 1',
+        color2: 'Color 2',
+        particlesSection: 'Particles',
+        explosionSection: 'Explosion',
+        movement: 'Movement',
+        noiseSpeed: 'Noise speed',
+        size: 'Size',
+        force: 'Force',
+        duration: 'Duration',
+        reconstruction: 'Reconstruction',
+        mode: 'Mode',
+    },
+} as const;
+
+type TranslationKey = keyof typeof TRANSLATIONS['fr'];
+
 export interface ShapeEntry {
     name: string;
     svgString: string;
@@ -119,6 +184,25 @@ export class Panel {
     private reorderDragIndex = -1;
     private exportBtn!: HTMLButtonElement;
     private exportIndicator!: HTMLElement;
+    private isExporting = false;
+
+    private lang: keyof typeof TRANSLATIONS = 'fr';
+    private langFrBtn!: HTMLButtonElement;
+    private langEnBtn!: HTMLButtonElement;
+    private shapesTitle!: HTMLElement;
+    private dropTextEl!: HTMLElement;
+    private dropHintEl!: HTMLElement;
+    private paletteLabel!: HTMLElement;
+    private paletteCustomOpt!: HTMLOptionElement;
+    private animationTitle!: HTMLElement;
+    private nextBtn!: HTMLButtonElement;
+    private delayLabelEl!: HTMLElement;
+    private bgLabelEl!: HTMLElement;
+    private dragOverlayTextEl!: HTMLElement;
+    private lastPhysicsArgs?: {
+        params: Parameters<Panel['buildPhysicsControls']>[0];
+        onChange: Parameters<Panel['buildPhysicsControls']>[1];
+    };
 
     private boundDragEnter: (e: DragEvent) => void;
     private boundDragLeave: (e: DragEvent) => void;
@@ -166,7 +250,7 @@ export class Panel {
 
     setAutoLoop(active: boolean, delay: number) {
         this.autoLoop = active;
-        this.playPauseBtn.textContent = active ? 'Pause' : 'Lecture';
+        this.playPauseBtn.textContent = this.#t(active ? 'pause' : 'play');
         this.playPauseBtn.classList.toggle('playing', active);
         this.delaySlider.value = String(delay);
         this.delayValueEl.textContent = `${delay} ms`;
@@ -183,23 +267,24 @@ export class Panel {
         },
         onChange: (key: string, value: number) => void,
     ) {
+        this.lastPhysicsArgs = { params, onChange };
         this.physicsContainer.innerHTML = '';
 
         const groups = [
             {
-                title: 'Particules',
+                title: this.#t('particlesSection'),
                 items: [
-                    { key: 'wigglePower',       label: 'Mouvement',    min: 0,    max: 0.7,  step: 0.01  },
-                    { key: 'wiggleSpeed',        label: 'Vitesse bruit',min: 0,    max: 3,    step: 0.01  },
-                    { key: 'baseParticleScale',  label: 'Taille',       min: 0.1,  max: 3,    step: 0.01  },
+                    { key: 'wigglePower',       label: this.#t('movement'),      min: 0,    max: 0.7,  step: 0.01  },
+                    { key: 'wiggleSpeed',        label: this.#t('noiseSpeed'),    min: 0,    max: 3,    step: 0.01  },
+                    { key: 'baseParticleScale',  label: this.#t('size'),          min: 0.1,  max: 3,    step: 0.01  },
                 ],
             },
             {
-                title: 'Explosion',
+                title: this.#t('explosionSection'),
                 items: [
-                    { key: 'burstStrength',       label: 'Force',          min: 0.01, max: 0.5,   step: 0.01  },
-                    { key: 'explosionDuration',   label: 'Durée',          min: 0.95, max: 0.999, step: 0.001 },
-                    { key: 'reconstructionSpeed', label: 'Reconstruction', min: 0.01, max: 0.2,   step: 0.005 },
+                    { key: 'burstStrength',       label: this.#t('force'),          min: 0.01, max: 0.5,   step: 0.01  },
+                    { key: 'explosionDuration',   label: this.#t('duration'),       min: 0.95, max: 0.999, step: 0.001 },
+                    { key: 'reconstructionSpeed', label: this.#t('reconstruction'), min: 0.01, max: 0.2,   step: 0.005 },
                 ],
             },
         ];
@@ -241,6 +326,36 @@ export class Panel {
         this.dragOverlay.remove();
     }
 
+    /* ─── i18n ─── */
+
+    #t(key: TranslationKey): string {
+        return TRANSLATIONS[this.lang][key];
+    }
+
+    #applyLang() {
+        this.langFrBtn.classList.toggle('active', this.lang === 'fr');
+        this.langEnBtn.classList.toggle('active', this.lang === 'en');
+
+        this.shapesTitle.textContent = this.#t('shapes');
+        this.emptyMsg.textContent = this.#t('emptyMsg');
+        this.dropTextEl.textContent = this.#t('dropText');
+        this.dropHintEl.textContent = this.#t('dropHint');
+        this.paletteLabel.textContent = this.#t('palette');
+        this.paletteCustomOpt.textContent = this.#t('paletteCustom');
+        this.animationTitle.textContent = this.#t('animation');
+        this.playPauseBtn.textContent = this.#t(this.autoLoop ? 'pause' : 'play');
+        this.nextBtn.textContent = this.#t('next');
+        this.delayLabelEl.textContent = this.#t('delay');
+        this.bgLabelEl.textContent = this.#t('background');
+        this.exportIndicator.textContent = this.#t('recording');
+        this.exportBtn.textContent = this.isExporting ? this.#t('exporting') : this.#t('exportVideo');
+        this.dragOverlayTextEl.textContent = this.#t('dragOverlay');
+
+        if (this.lastPhysicsArgs) {
+            this.buildPhysicsControls(this.lastPhysicsArgs.params, this.lastPhysicsArgs.onChange);
+        }
+    }
+
     /* ─── Build DOM ─── */
 
     #build(): HTMLElement {
@@ -272,7 +387,31 @@ export class Panel {
         sub.className = 'panel-subtitle';
         sub.textContent = 'WebGPU SVG Tool';
 
-        header.append(h1, sub);
+        const langSwitcher = document.createElement('div');
+        langSwitcher.className = 'lang-switcher';
+
+        this.langFrBtn = document.createElement('button');
+        this.langFrBtn.textContent = 'FR';
+        this.langFrBtn.className = 'lang-btn active';
+        this.langFrBtn.addEventListener('click', () => {
+            this.lang = 'fr';
+            this.#applyLang();
+        });
+
+        const sep = document.createElement('span');
+        sep.className = 'lang-sep';
+        sep.textContent = '|';
+
+        this.langEnBtn = document.createElement('button');
+        this.langEnBtn.textContent = 'EN';
+        this.langEnBtn.className = 'lang-btn';
+        this.langEnBtn.addEventListener('click', () => {
+            this.lang = 'en';
+            this.#applyLang();
+        });
+
+        langSwitcher.append(this.langFrBtn, sep, this.langEnBtn);
+        header.append(h1, sub, langSwitcher);
         return header;
     }
 
@@ -280,10 +419,10 @@ export class Panel {
         const section = document.createElement('section');
         section.className = 'panel-section';
 
-        const title = document.createElement('h2');
-        title.className = 'section-title';
-        title.textContent = 'Formes';
-        section.appendChild(title);
+        this.shapesTitle = document.createElement('h2');
+        this.shapesTitle.className = 'section-title';
+        this.shapesTitle.textContent = this.#t('shapes');
+        section.appendChild(this.shapesTitle);
         // section.appendChild(this.#buildModeToggle()); // TODO: 3D mode hidden until optimized
 
         this.shapeListEl = document.createElement('div');
@@ -292,7 +431,7 @@ export class Panel {
 
         this.emptyMsg = document.createElement('p');
         this.emptyMsg.className = 'empty-message';
-        this.emptyMsg.textContent = 'Aucune forme chargee. Glissez un SVG ci-dessous.';
+        this.emptyMsg.textContent = this.#t('emptyMsg');
         this.emptyMsg.style.display = 'none';
         section.appendChild(this.emptyMsg);
 
@@ -313,15 +452,16 @@ export class Panel {
         icon.className = 'drop-zone-icon';
         icon.innerHTML = UPLOAD_ICON;
 
-        const text = document.createElement('span');
-        text.className = 'drop-zone-text';
-        text.textContent = 'Glisser un SVG ici';
+        this.dropTextEl = document.createElement('span');
+        this.dropTextEl.className = 'drop-zone-text';
+        this.dropTextEl.textContent = this.#t('dropText');
 
         const hint = document.createElement('span');
         hint.className = 'drop-zone-hint';
-        hint.textContent = 'ou cliquer pour parcourir';
+        hint.textContent = this.#t('dropHint');
+        this.dropHintEl = hint;
 
-        content.append(icon, text, hint);
+        content.append(icon, this.dropTextEl, hint);
         this.dropZoneEl.appendChild(content);
 
         this.fileInput = document.createElement('input');
@@ -362,17 +502,17 @@ export class Panel {
         const row = document.createElement('div');
         row.className = 'palette-row';
 
-        const label = document.createElement('label');
-        label.className = 'control-label';
-        label.textContent = 'Palette';
+        this.paletteLabel = document.createElement('label');
+        this.paletteLabel.className = 'control-label';
+        this.paletteLabel.textContent = this.#t('palette');
 
         this.paletteSelect = document.createElement('select');
         this.paletteSelect.className = 'palette-select';
 
-        const customOpt = document.createElement('option');
-        customOpt.value = '';
-        customOpt.textContent = 'Personnalise';
-        this.paletteSelect.appendChild(customOpt);
+        this.paletteCustomOpt = document.createElement('option');
+        this.paletteCustomOpt.value = '';
+        this.paletteCustomOpt.textContent = this.#t('paletteCustom');
+        this.paletteSelect.appendChild(this.paletteCustomOpt);
 
         for (const name of Object.keys(PALETTE_PRESETS)) {
             const opt = document.createElement('option');
@@ -389,7 +529,7 @@ export class Panel {
             }
         });
 
-        row.append(label, this.paletteSelect);
+        row.append(this.paletteLabel, this.paletteSelect);
         return row;
     }
 
@@ -477,38 +617,38 @@ export class Panel {
         const section = document.createElement('section');
         section.className = 'panel-section';
 
-        const title = document.createElement('h2');
-        title.className = 'section-title';
-        title.textContent = 'Animation';
-        section.appendChild(title);
+        this.animationTitle = document.createElement('h2');
+        this.animationTitle.className = 'section-title';
+        this.animationTitle.textContent = this.#t('animation');
+        section.appendChild(this.animationTitle);
 
         const btnRow = document.createElement('div');
         btnRow.className = 'btn-row';
 
         this.playPauseBtn = document.createElement('button');
         this.playPauseBtn.className = 'btn btn-primary playing';
-        this.playPauseBtn.textContent = 'Pause';
+        this.playPauseBtn.textContent = this.#t('pause');
         this.playPauseBtn.addEventListener('click', () => {
             this.autoLoop = !this.autoLoop;
-            this.playPauseBtn.textContent = this.autoLoop ? 'Pause' : 'Lecture';
+            this.playPauseBtn.textContent = this.#t(this.autoLoop ? 'pause' : 'play');
             this.playPauseBtn.classList.toggle('playing', this.autoLoop);
             this.callbacks.onAutoLoopToggle(this.autoLoop);
         });
 
-        const nextBtn = document.createElement('button');
-        nextBtn.className = 'btn btn-secondary';
-        nextBtn.textContent = 'Suivant';
-        nextBtn.addEventListener('click', () => this.callbacks.onMorphNext());
+        this.nextBtn = document.createElement('button');
+        this.nextBtn.className = 'btn btn-secondary';
+        this.nextBtn.textContent = this.#t('next');
+        this.nextBtn.addEventListener('click', () => this.callbacks.onMorphNext());
 
-        btnRow.append(this.playPauseBtn, nextBtn);
+        btnRow.append(this.playPauseBtn, this.nextBtn);
         section.appendChild(btnRow);
 
         const delayRow = document.createElement('div');
         delayRow.className = 'control-row';
 
-        const delayLabel = document.createElement('span');
-        delayLabel.className = 'control-label';
-        delayLabel.textContent = 'Delai';
+        this.delayLabelEl = document.createElement('span');
+        this.delayLabelEl.className = 'control-label';
+        this.delayLabelEl.textContent = this.#t('delay');
 
         this.delaySlider = document.createElement('input');
         this.delaySlider.type = 'range';
@@ -528,16 +668,16 @@ export class Panel {
             this.callbacks.onDelayChange(val);
         });
 
-        delayRow.append(delayLabel, this.delaySlider, this.delayValueEl);
+        delayRow.append(this.delayLabelEl, this.delaySlider, this.delayValueEl);
         section.appendChild(delayRow);
 
         const bgRow = document.createElement('div');
         bgRow.className = 'control-row';
         bgRow.style.marginTop = '10px';
 
-        const bgLabel = document.createElement('span');
-        bgLabel.className = 'control-label';
-        bgLabel.textContent = 'Fond';
+        this.bgLabelEl = document.createElement('span');
+        this.bgLabelEl.className = 'control-label';
+        this.bgLabelEl.textContent = this.#t('background');
 
         const bgInput1 = document.createElement('input');
         bgInput1.type = 'color';
@@ -555,17 +695,17 @@ export class Panel {
         bgInput1.addEventListener('input', onBgChange);
         bgInput2.addEventListener('input', onBgChange);
 
-        bgRow.append(bgLabel, bgInput1, bgInput2);
+        bgRow.append(this.bgLabelEl, bgInput1, bgInput2);
         section.appendChild(bgRow);
 
         this.exportIndicator = document.createElement('div');
         this.exportIndicator.className = 'export-indicator hidden';
-        this.exportIndicator.textContent = 'Enregistrement en cours...';
+        this.exportIndicator.textContent = this.#t('recording');
         section.appendChild(this.exportIndicator);
 
         this.exportBtn = document.createElement('button');
         this.exportBtn.className = 'btn btn-secondary export-btn';
-        this.exportBtn.textContent = 'Exporter en video';
+        this.exportBtn.textContent = this.#t('exportVideo');
         this.exportBtn.addEventListener('click', () => this.callbacks.onExportVideo());
         section.appendChild(this.exportBtn);
 
@@ -573,8 +713,9 @@ export class Panel {
     }
 
     setExporting(active: boolean) {
+        this.isExporting = active;
         this.exportBtn.disabled = active;
-        this.exportBtn.textContent = active ? 'Export en cours...' : 'Exporter en video';
+        this.exportBtn.textContent = active ? this.#t('exporting') : this.#t('exportVideo');
         this.exportIndicator.classList.toggle('hidden', !active);
     }
 
@@ -588,10 +729,10 @@ export class Panel {
         const icon = document.createElement('div');
         icon.innerHTML = UPLOAD_ICON.replace('28', '48').replace('28', '48');
 
-        const text = document.createElement('p');
-        text.textContent = 'Deposer les fichiers SVG ici';
+        this.dragOverlayTextEl = document.createElement('p');
+        this.dragOverlayTextEl.textContent = this.#t('dragOverlay');
 
-        content.append(icon, text);
+        content.append(icon, this.dragOverlayTextEl);
         overlay.appendChild(content);
         return overlay;
     }
