@@ -10,7 +10,6 @@ import {
     Vector3,
     WebGPURenderer,
 } from 'three/webgpu';
-import { Pane } from 'tweakpane';
 import { Pointer } from './utils/Pointer';
 import ParticlesMesh from './ParticlesMesh';
 import { loadSvgShapes, parseSingleSvg } from './utils/svgParser';
@@ -30,7 +29,6 @@ class Demo {
 
     pointerHandler: Pointer;
     panel: Panel;
-    tweakPane?: Pane;
 
     autoLoop = false;
     autoLoopDelay = 2000;
@@ -38,6 +36,9 @@ class Demo {
 
     shapes: ShapeEntry[] = [];
     activePaletteName = DEFAULT_PALETTE;
+
+    is3D = false;
+    readonly #DEPTH_3D = 0.9;
 
     bgColor1 = uniform(new Color('#ffffff'));
     bgColor2 = uniform(new Color('#ffffff'));
@@ -83,6 +84,7 @@ class Demo {
                 this.bgColor2.value.set(c2);
             },
             onExportVideo: () => this.#exportVideo(),
+            on3DModeToggle: (is3D) => this.#handle3DModeToggle(is3D),
         });
 
         this.onWindowResize();
@@ -147,7 +149,7 @@ class Demo {
         }
 
         if (this.shapes.length === 0) {
-            this.#destroyTweakPane();
+            this.panel.clearPhysicsControls();
             return;
         }
 
@@ -175,17 +177,34 @@ class Demo {
         this.#updateMeshScale();
         this.panel.setActiveIndex(this.mesh.uniforms.activeIndex.value);
 
-        this.#destroyTweakPane();
-        this.#initTweakPane();
+        this.#initPhysicsControls();
     }
 
     /* ─── Panel callbacks ─── */
 
+    async #handle3DModeToggle(is3D: boolean) {
+        this.is3D = is3D;
+        if (!is3D && this.mesh) {
+            this.mesh.rotation.y = 0;
+        }
+        await this.#reparseAllShapes();
+    }
+
+    async #reparseAllShapes() {
+        const depth = this.is3D ? this.#DEPTH_3D : 0;
+        for (const shape of this.shapes) {
+            shape.positions = await parseSingleSvg(shape.svgString, PARTICLE_COUNT, 3.5, depth);
+        }
+        this.panel.setShapes(this.shapes);
+        await this.#rebuildMesh();
+    }
+
     async #handleFilesDropped(files: { name: string; content: string }[]) {
         const palette = PALETTE_PRESETS[this.activePaletteName] || PALETTE_PRESETS[DEFAULT_PALETTE];
+        const depth = this.is3D ? this.#DEPTH_3D : 0;
 
         for (const file of files) {
-            const positions = await parseSingleSvg(file.content, PARTICLE_COUNT);
+            const positions = await parseSingleSvg(file.content, PARTICLE_COUNT, 3.5, depth);
             const idx = this.shapes.length;
             this.shapes.push({
                 name: file.name,
@@ -406,6 +425,10 @@ class Demo {
         this.pointerHandler.update(delta);
         this.mesh?.update();
 
+        if (this.is3D && this.mesh) {
+            this.mesh.rotation.y += 0.4 * delta;
+        }
+
         this.renderer.renderAsync(this.scene, this.camera);
     }
 
@@ -416,7 +439,7 @@ class Demo {
 
         this.#stopAutoLoop();
         this.#destroyEvents();
-        this.#destroyTweakPane();
+        this.panel.clearPhysicsControls();
         this.panel.destroy();
         this.stats?.dom.remove();
         this.pointerHandler.destroy();
@@ -427,58 +450,17 @@ class Demo {
         }
     }
 
-    /* ─── Tweakpane ─── */
+    /* ─── Physics controls ─── */
 
-    #initTweakPane() {
+    #initPhysicsControls() {
         if (!this.mesh) return;
-
-        const container = this.panel.getTweakpaneContainer();
-        this.tweakPane = new Pane({ container });
-
-        const particlesFolder = (this.tweakPane as any).addFolder({ title: 'Particules' });
-
-        particlesFolder.addBinding(this.mesh.params, 'wigglePower', {
-            label: 'mouvement',
-            min: 0, max: 0.7, step: 0.01,
-        }).on('change', (event: any) => {
-            if (this.mesh) this.mesh.uniforms.wigglePower.value = event.value;
+        this.panel.buildPhysicsControls(this.mesh.params, (key, value) => {
+            if (!this.mesh) return;
+            (this.mesh.params as any)[key] = value;
+            if (key === 'wigglePower') this.mesh.uniforms.wigglePower.value = value;
+            if (key === 'wiggleSpeed') this.mesh.uniforms.wiggleSpeed.value = value;
+            if (key === 'baseParticleScale') this.mesh.uniforms.scale.value = value;
         });
-
-        particlesFolder.addBinding(this.mesh.params, 'wiggleSpeed', {
-            label: 'vitesse bruit',
-            min: 0, max: 3, step: 0.01,
-        }).on('change', (event: any) => {
-            if (this.mesh) this.mesh.uniforms.wiggleSpeed.value = event.value;
-        });
-
-        particlesFolder.addBinding(this.mesh.params, 'baseParticleScale', {
-            label: 'taille',
-            min: 0.1, max: 3, step: 0.01,
-        }).on('change', (event: any) => {
-            if (this.mesh) this.mesh.uniforms.scale.value = event.value;
-        });
-
-        const explosionFolder = (this.tweakPane as any).addFolder({ title: 'Explosion' });
-
-        explosionFolder.addBinding(this.mesh.params, 'burstStrength', {
-            label: 'force',
-            min: 0.01, max: 0.5, step: 0.01,
-        });
-
-        explosionFolder.addBinding(this.mesh.params, 'explosionDuration', {
-            label: 'duree explosion',
-            min: 0.95, max: 0.999, step: 0.001,
-        });
-
-        explosionFolder.addBinding(this.mesh.params, 'reconstructionSpeed', {
-            label: 'reconstruction',
-            min: 0.01, max: 0.2, step: 0.005,
-        });
-    }
-
-    #destroyTweakPane() {
-        this.tweakPane?.dispose();
-        this.tweakPane = undefined;
     }
 }
 

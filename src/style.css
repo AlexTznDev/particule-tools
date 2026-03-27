@@ -9,7 +9,7 @@ body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #000;
+    background: #f5f5f5;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -18,13 +18,31 @@ body {
     flex-direction: row;
 }
 
-/* ─── Canvas ─── */
+/* ─── Canvas wrapper ─── */
 
 .canvas-wrapper {
     position: relative;
     flex: 1;
     height: 100vh;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    order: 1;
+}
+
+.canvas-box {
+    position: relative;
+    width: min(72vh, 82%);
+    aspect-ratio: 1;
+    border-radius: 24px;
+    background: #ebebeb;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 8px 24px rgba(0, 0, 0, 0.08),
+        0 24px 64px rgba(0, 0, 0, 0.10);
+    overflow: hidden;
 }
 
 canvas {
@@ -37,21 +55,22 @@ canvas {
 /* ─── Panel ─── */
 
 .panel {
-    width: 320px;
-    min-width: 320px;
+    width: 300px;
+    min-width: 300px;
     height: 100vh;
-    background: #141414;
-    color: #d4d4d4;
+    background: #ffffff;
+    color: #1a1a1a;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
     z-index: 10;
     user-select: none;
+    order: 2;
 }
 
 .panel-header {
     padding: 20px 16px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     flex-shrink: 0;
 }
 
@@ -59,12 +78,12 @@ canvas {
     font-size: 1.05rem;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: #fff;
+    color: #0a0a0a;
 }
 
 .panel-subtitle {
     font-size: 0.7rem;
-    color: #666;
+    color: #aaa;
     margin-top: 2px;
     letter-spacing: 0.04em;
 }
@@ -72,6 +91,7 @@ canvas {
 .panel-scroll {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0 16px 24px;
 }
 
@@ -84,7 +104,7 @@ canvas {
 }
 
 .panel-scroll::-webkit-scrollbar-thumb {
-    background: #333;
+    background: #ddd;
     border-radius: 3px;
 }
 
@@ -99,7 +119,7 @@ canvas {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #777;
+    color: #aaa;
     margin: 20px 0 10px;
 }
 
@@ -116,8 +136,8 @@ canvas {
     align-items: center;
     gap: 10px;
     padding: 8px 10px;
-    background: #1e1e1e;
-    border-radius: 8px;
+    background: #f5f5f5;
+    border-radius: 10px;
     border-left: 3px solid transparent;
     transition: background 0.15s, border-color 0.2s;
     cursor: grab;
@@ -128,12 +148,12 @@ canvas {
 }
 
 .shape-card:hover {
-    background: #262626;
+    background: #eeeeee;
 }
 
 .shape-card.active {
-    border-left-color: #fff;
-    background: #222;
+    border-left-color: #0a0a0a;
+    background: #ebebeb;
 }
 
 .shape-card.dragging {
@@ -141,19 +161,19 @@ canvas {
 }
 
 .shape-card.drag-over-top {
-    box-shadow: 0 -2px 0 0 #fff;
+    box-shadow: 0 -2px 0 0 #0a0a0a;
 }
 
 .shape-card.drag-over-bottom {
-    box-shadow: 0 2px 0 0 #fff;
+    box-shadow: 0 2px 0 0 #0a0a0a;
 }
 
 .shape-thumb {
     width: 36px;
     height: 36px;
-    border-radius: 5px;
+    border-radius: 6px;
     background:
-        repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 0 0 / 12px 12px;
+        repeating-conic-gradient(#ddd 0% 25%, #f5f5f5 0% 50%) 0 0 / 12px 12px;
     flex-shrink: 0;
     object-fit: contain;
     padding: 3px;
@@ -171,7 +191,7 @@ canvas {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 5px;
-    color: #ccc;
+    color: #333;
 }
 
 .shape-colors {
@@ -182,7 +202,7 @@ canvas {
 .shape-color-input {
     width: 26px;
     height: 26px;
-    border: 2px solid #333;
+    border: 2px solid #e0e0e0;
     border-radius: 5px;
     cursor: pointer;
     padding: 0;
@@ -201,13 +221,13 @@ canvas {
 }
 
 .shape-color-input:hover {
-    border-color: #555;
+    border-color: #bbb;
 }
 
 .shape-delete {
     background: none;
     border: none;
-    color: #555;
+    color: #ccc;
     cursor: pointer;
     font-size: 1.2rem;
     padding: 2px 6px;
@@ -217,13 +237,13 @@ canvas {
 }
 
 .shape-delete:hover {
-    color: #ff6b6b;
-    background: rgba(255, 107, 107, 0.1);
+    color: #ff4444;
+    background: rgba(255, 68, 68, 0.08);
 }
 
 .empty-message {
     font-size: 0.8rem;
-    color: #555;
+    color: #bbb;
     text-align: center;
     padding: 16px 8px;
     line-height: 1.5;
@@ -232,7 +252,7 @@ canvas {
 /* ─── Drop zone ─── */
 
 .drop-zone {
-    border: 2px dashed #333;
+    border: 2px dashed #ddd;
     border-radius: 10px;
     padding: 20px 12px;
     text-align: center;
@@ -243,8 +263,8 @@ canvas {
 
 .drop-zone:hover,
 .drop-zone.drag-active {
-    border-color: #aaa;
-    background: rgba(255, 255, 255, 0.03);
+    border-color: #999;
+    background: rgba(0, 0, 0, 0.02);
 }
 
 .drop-zone-content {
@@ -255,13 +275,13 @@ canvas {
 }
 
 .drop-zone-icon {
-    color: #444;
+    color: #ccc;
     transition: color 0.2s;
 }
 
 .drop-zone:hover .drop-zone-icon,
 .drop-zone.drag-active .drop-zone-icon {
-    color: #aaa;
+    color: #777;
 }
 
 .drop-zone-text {
@@ -271,7 +291,7 @@ canvas {
 
 .drop-zone-hint {
     font-size: 0.7rem;
-    color: #555;
+    color: #bbb;
 }
 
 /* ─── Palette select ─── */
@@ -286,10 +306,10 @@ canvas {
 .palette-select {
     flex: 1;
     padding: 6px 10px;
-    border: 1px solid #333;
+    border: 1px solid #e0e0e0;
     border-radius: 6px;
-    background: #1e1e1e;
-    color: #ccc;
+    background: #f5f5f5;
+    color: #333;
     font-size: 0.8rem;
     cursor: pointer;
     outline: none;
@@ -297,7 +317,7 @@ canvas {
 }
 
 .palette-select:focus {
-    border-color: #888;
+    border-color: #999;
 }
 
 /* ─── Animation controls ─── */
@@ -311,7 +331,7 @@ canvas {
 .btn {
     padding: 7px 16px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.82rem;
     font-weight: 500;
@@ -320,29 +340,30 @@ canvas {
 }
 
 .btn-primary {
-    background: #fff;
-    color: #141414;
+    background: #0a0a0a;
+    color: #fff;
 }
 
 .btn-primary:hover {
-    background: #ddd;
+    background: #222;
 }
 
 .btn-primary.playing {
-    background: #ccc;
+    background: #333;
 }
 
 .btn-primary.playing:hover {
-    background: #fff;
+    background: #0a0a0a;
 }
 
 .btn-secondary {
-    background: #1e1e1e;
-    color: #ccc;
+    background: #f0f0f0;
+    color: #333;
+    border: 1px solid #e8e8e8;
 }
 
 .btn-secondary:hover {
-    background: #262626;
+    background: #e8e8e8;
 }
 
 .control-row {
@@ -353,25 +374,26 @@ canvas {
 
 .control-label {
     font-size: 0.78rem;
-    color: #777;
+    color: #999;
     flex-shrink: 0;
 }
 
 .control-value {
     font-size: 0.78rem;
-    color: #aaa;
-    min-width: 56px;
+    color: #555;
+    min-width: 44px;
     text-align: right;
     flex-shrink: 0;
 }
 
 .control-range {
     flex: 1;
+    min-width: 0;
     -webkit-appearance: none;
     appearance: none;
     height: 4px;
     border-radius: 2px;
-    background: #1e1e1e;
+    background: #e8e8e8;
     outline: none;
     cursor: pointer;
 }
@@ -381,20 +403,20 @@ canvas {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #fff;
+    background: #333;
     cursor: pointer;
     transition: background 0.15s;
 }
 
 .control-range::-webkit-slider-thumb:hover {
-    background: #ddd;
+    background: #0a0a0a;
 }
 
 .control-range::-moz-range-thumb {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #fff;
+    background: #333;
     border: none;
     cursor: pointer;
 }
@@ -409,10 +431,10 @@ canvas {
 .export-indicator {
     margin-top: 12px;
     padding: 8px 12px;
-    background: #1e1e1e;
+    background: #fff0f0;
     border-radius: 6px;
     font-size: 0.78rem;
-    color: #ff4444;
+    color: #cc2222;
     text-align: center;
     animation: pulse-rec 1.2s ease-in-out infinite;
 }
@@ -440,13 +462,13 @@ canvas {
 }
 
 .tweakpane-container .tp-fldv_b {
-    background: #1e1e1e !important;
+    background: #f5f5f5 !important;
     border-radius: 8px !important;
     border: none !important;
 }
 
 .tweakpane-container .tp-fldv_t {
-    color: #777 !important;
+    color: #aaa !important;
     font-size: 0.7rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
@@ -454,33 +476,105 @@ canvas {
 }
 
 .tweakpane-container .tp-lblv_l {
-    color: #888 !important;
+    color: #999 !important;
     font-size: 0.78rem !important;
 }
 
 .tweakpane-container .tp-lblv_v {
-    color: #ccc !important;
+    color: #333 !important;
 }
 
 .tweakpane-container .tp-sldv_t {
-    background: #141414 !important;
+    background: #e8e8e8 !important;
     border-radius: 2px !important;
 }
 
 .tweakpane-container .tp-sldv_k {
-    background: #fff !important;
+    background: #333 !important;
     border-radius: 2px !important;
 }
 
 .tweakpane-container .tp-txtv_i {
-    background: #141414 !important;
-    color: #ccc !important;
-    border: 1px solid #333 !important;
+    background: #fff !important;
+    color: #333 !important;
+    border: 1px solid #e0e0e0 !important;
     border-radius: 4px !important;
 }
 
 .tweakpane-container .tp-fldv + .tp-fldv {
     margin-top: 8px;
+}
+
+/* ─── Physics param rows ─── */
+
+.param-row {
+    margin-bottom: 10px;
+}
+
+.param-row .control-label {
+    width: 100px;
+    min-width: 100px;
+    font-size: 0.75rem;
+}
+
+/* ─── Mode toggle 2D / 3D ─── */
+
+.mode-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mode-toggle-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #ccc;
+    transition: color 0.2s;
+    user-select: none;
+}
+
+.mode-toggle-label.active {
+    color: #333;
+}
+
+.mode-toggle-track {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #e8e8e8;
+    border: 1px solid #d8d8d8;
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.mode-toggle-track.on {
+    background: #0a0a0a;
+    border-color: #0a0a0a;
+}
+
+.mode-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 12px;
+    height: 12px;
+    background: #bbb;
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.mode-toggle-track.on .mode-toggle-thumb {
+    transform: translateX(16px);
+    background: #fff;
 }
 
 /* ─── Drag overlay ─── */
@@ -489,7 +583,7 @@ canvas {
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(245, 245, 245, 0.92);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -504,8 +598,8 @@ canvas {
 
 .drag-overlay-content {
     text-align: center;
-    color: #fff;
-    border: 3px dashed #666;
+    color: #333;
+    border: 3px dashed #ccc;
     border-radius: 20px;
     padding: 50px 70px;
     display: flex;

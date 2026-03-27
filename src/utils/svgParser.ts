@@ -28,6 +28,7 @@ function samplePoints(
     size: number,
     count: number,
     worldSize: number,
+    depth = 0,
 ): number[] {
     const { data } = ctx.getImageData(0, 0, size, size);
 
@@ -62,20 +63,40 @@ function samplePoints(
 
     const edgeN = edge.length > 0 ? Math.floor(count * EDGE_SAMPLE_RATIO) : 0;
 
-    const pick = (pool: number[], n: number) => {
+    const pick = (pool: number[], n: number, zRange: number) => {
         const len = pool.length / 2;
         for (let i = 0; i < n; i++) {
             const idx = Math.floor(Math.random() * len) * 2;
             positions.push(
                 (pool[idx] + (Math.random() - 0.5) * 0.6) * scale - half,
                 -((pool[idx + 1] + (Math.random() - 0.5) * 0.6) * scale - half),
-                0,
+                (Math.random() - 0.5) * zRange,
             );
         }
     };
 
-    if (edge.length > 0) pick(edge, edgeN);
-    pick(fill.length > 0 ? fill : edge, count - edgeN);
+    const pickFaces = (pool: number[], n: number, faceZ: number) => {
+        const len = pool.length / 2;
+        const half2 = Math.floor(n / 2);
+        for (let i = 0; i < n; i++) {
+            const idx = Math.floor(Math.random() * len) * 2;
+            const z = i < half2 ? faceZ : -faceZ;
+            positions.push(
+                (pool[idx] + (Math.random() - 0.5) * 0.6) * scale - half,
+                -((pool[idx + 1] + (Math.random() - 0.5) * 0.6) * scale - half),
+                z + (Math.random() - 0.5) * 0.04,
+            );
+        }
+    };
+
+    if (edge.length > 0) {
+        if (depth > 0) {
+            pickFaces(edge, edgeN, depth / 2);
+        } else {
+            pick(edge, edgeN, 0);
+        }
+    }
+    pick(fill.length > 0 ? fill : edge, count - edgeN, depth);
 
     return positions;
 }
@@ -90,6 +111,7 @@ export async function parseSingleSvg(
     svgString: string,
     particleCount: number,
     worldSize = 3.5,
+    depth = 0,
 ): Promise<number[]> {
     const ctx = getSharedCtx();
     ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -111,7 +133,7 @@ export async function parseSingleSvg(
     }
     ctx.drawImage(img, dx, dy, dw, dh);
 
-    return samplePoints(ctx, CANVAS_SIZE, particleCount, worldSize);
+    return samplePoints(ctx, CANVAS_SIZE, particleCount, worldSize, depth);
 }
 
 export async function loadSvgShapes(

@@ -17,6 +17,7 @@ export interface PanelCallbacks {
     onPaletteApply: (paletteName: string, colors: [string, string][]) => void;
     onBackgroundChange: (color1: string, color2: string) => void;
     onExportVideo: () => void;
+    on3DModeToggle: (is3D: boolean) => void;
 }
 
 export const PALETTE_PRESETS: Record<string, [string, string][]> = {
@@ -109,7 +110,8 @@ export class Panel {
     private delaySlider!: HTMLInputElement;
     private delayValueEl!: HTMLSpanElement;
     private paletteSelect!: HTMLSelectElement;
-    private tweakpaneContainer!: HTMLElement;
+    private physicsContainer!: HTMLElement;
+    private is3D = false;
 
     private callbacks: PanelCallbacks;
     private dragCounter = 0;
@@ -174,8 +176,60 @@ export class Panel {
         this.paletteSelect.value = name;
     }
 
-    getTweakpaneContainer(): HTMLElement {
-        return this.tweakpaneContainer;
+    buildPhysicsControls(
+        params: {
+            wigglePower: number; wiggleSpeed: number; baseParticleScale: number;
+            burstStrength: number; explosionDuration: number; reconstructionSpeed: number;
+        },
+        onChange: (key: string, value: number) => void,
+    ) {
+        this.physicsContainer.innerHTML = '';
+
+        const groups = [
+            {
+                title: 'Particules',
+                items: [
+                    { key: 'wigglePower',       label: 'Mouvement',    min: 0,    max: 0.7,  step: 0.01  },
+                    { key: 'wiggleSpeed',        label: 'Vitesse bruit',min: 0,    max: 3,    step: 0.01  },
+                    { key: 'baseParticleScale',  label: 'Taille',       min: 0.1,  max: 3,    step: 0.01  },
+                ],
+            },
+            {
+                title: 'Explosion',
+                items: [
+                    { key: 'burstStrength',       label: 'Force',          min: 0.01, max: 0.5,   step: 0.01  },
+                    { key: 'explosionDuration',   label: 'Durée',          min: 0.95, max: 0.999, step: 0.001 },
+                    { key: 'reconstructionSpeed', label: 'Reconstruction', min: 0.01, max: 0.2,   step: 0.005 },
+                ],
+            },
+        ];
+
+        for (const group of groups) {
+            const section = document.createElement('section');
+            section.className = 'panel-section';
+
+            const title = document.createElement('h2');
+            title.className = 'section-title';
+            title.textContent = group.title;
+            section.appendChild(title);
+
+            for (const item of group.items) {
+                section.appendChild(
+                    this.#buildParamSlider(
+                        item.label,
+                        (params as any)[item.key],
+                        item.min, item.max, item.step,
+                        (v) => onChange(item.key, v),
+                    ),
+                );
+            }
+
+            this.physicsContainer.appendChild(section);
+        }
+    }
+
+    clearPhysicsControls() {
+        this.physicsContainer.innerHTML = '';
     }
 
     destroy() {
@@ -200,9 +254,8 @@ export class Panel {
         scroll.appendChild(this.#buildShapesSection());
         scroll.appendChild(this.#buildAnimationSection());
 
-        this.tweakpaneContainer = document.createElement('div');
-        this.tweakpaneContainer.className = 'tweakpane-container';
-        scroll.appendChild(this.tweakpaneContainer);
+        this.physicsContainer = document.createElement('div');
+        scroll.appendChild(this.physicsContainer);
 
         panel.appendChild(scroll);
         return panel;
@@ -231,6 +284,7 @@ export class Panel {
         title.className = 'section-title';
         title.textContent = 'Formes';
         section.appendChild(title);
+        // section.appendChild(this.#buildModeToggle()); // TODO: 3D mode hidden until optimized
 
         this.shapeListEl = document.createElement('div');
         this.shapeListEl.className = 'shape-list';
@@ -336,6 +390,86 @@ export class Panel {
         });
 
         row.append(label, this.paletteSelect);
+        return row;
+    }
+
+    #buildParamSlider(
+        label: string,
+        initialValue: number,
+        min: number,
+        max: number,
+        step: number,
+        onChange: (value: number) => void,
+    ): HTMLElement {
+        const row = document.createElement('div');
+        row.className = 'control-row param-row';
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'control-label';
+        labelEl.textContent = label;
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'control-range';
+        slider.min = String(min);
+        slider.max = String(max);
+        slider.step = String(step);
+        slider.value = String(initialValue);
+
+        const decimals = step < 0.01 ? 3 : 2;
+        const valueEl = document.createElement('span');
+        valueEl.className = 'control-value';
+        valueEl.textContent = initialValue.toFixed(decimals);
+
+        slider.addEventListener('input', () => {
+            const val = Number(slider.value);
+            valueEl.textContent = val.toFixed(decimals);
+            onChange(val);
+        });
+
+        row.append(labelEl, slider, valueEl);
+        return row;
+    }
+
+    #buildModeToggle(): HTMLElement {
+        const row = document.createElement('div');
+        row.className = 'mode-toggle-row';
+
+        const label = document.createElement('span');
+        label.className = 'control-label';
+        label.textContent = 'Mode';
+
+        const toggleWrap = document.createElement('div');
+        toggleWrap.className = 'mode-toggle';
+
+        const label2D = document.createElement('span');
+        label2D.className = 'mode-toggle-label active';
+        label2D.textContent = '2D';
+
+        const track = document.createElement('button');
+        track.className = 'mode-toggle-track';
+        track.setAttribute('role', 'switch');
+        track.setAttribute('aria-checked', 'false');
+
+        const thumb = document.createElement('span');
+        thumb.className = 'mode-toggle-thumb';
+        track.appendChild(thumb);
+
+        const label3D = document.createElement('span');
+        label3D.className = 'mode-toggle-label';
+        label3D.textContent = '3D';
+
+        track.addEventListener('click', () => {
+            this.is3D = !this.is3D;
+            track.setAttribute('aria-checked', String(this.is3D));
+            track.classList.toggle('on', this.is3D);
+            label2D.classList.toggle('active', !this.is3D);
+            label3D.classList.toggle('active', this.is3D);
+            this.callbacks.on3DModeToggle(this.is3D);
+        });
+
+        toggleWrap.append(label2D, track, label3D);
+        row.append(label, toggleWrap);
         return row;
     }
 
